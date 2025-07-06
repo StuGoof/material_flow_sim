@@ -1,47 +1,35 @@
 
 import streamlit as st
-import matplotlib.pyplot as plt
 
 # Title
 st.title("Material Flow Simulation")
 
-# Sidebar inputs
-st.sidebar.header("Input Parameters")
+# Input Section
+st.header("Input Parameters")
 
-feed_rate_kgph = st.sidebar.slider("Feed Rate (kg/h)", min_value=100, max_value=10000, value=1000, step=100)
-vessel_volume_m3 = st.sidebar.slider("Vessel Volume (m³)", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
-bulk_density_gl = st.sidebar.slider("Bulk Density (g/L)", min_value=100, max_value=2000, value=800, step=50)
-moisture_content_pct = st.sidebar.slider("Moisture Content (%)", min_value=0, max_value=100, value=10, step=1)
-water_input_kgph = st.sidebar.slider("Water Input (kg/h)", min_value=0, max_value=5000, value=500, step=100)
+# Reordered and renamed inputs
+dry_meal_feed_rate = st.number_input("Dry Meal Feed Rate (kg/h)", min_value=0.0, value=500.0, step=10.0)
+meal_moisture_content = st.number_input("Meal Moisture Content (%)", min_value=0.0, max_value=100.0, value=10.0, step=1.0)
 
-# Convert units
-bulk_density_kgm3 = bulk_density_gl / 1000 * 1000  # g/L to kg/m³
-total_input_kgph = feed_rate_kgph + water_input_kgph  # total mass input
-material_volume_m3 = feed_rate_kgph / bulk_density_kgm3  # volume of dry material
-total_volume_m3 = material_volume_m3 + (water_input_kgph / 1000)  # water assumed to have density 1000 kg/m³
+vessel_volume_m3 = st.number_input("Vessel Volume (m³)", min_value=0.1, value=2.0, step=0.1)
+bulk_density_g_per_l = st.number_input("Bulk Density (g/L)", min_value=0.0, value=600.0, step=10.0)
 
-# Filling degree
-filling_degree_pct = min((total_volume_m3 / vessel_volume_m3) * 100, 100)
+liquid_input_1 = st.number_input("Liquid Input 1 (kg/h)", min_value=0.0, value=100.0, step=10.0)
+liquid_input_2 = st.number_input("Liquid Input 2 (kg/h)", min_value=0.0, value=50.0, step=10.0)
+liquid_input_3 = st.number_input("Liquid Input 3 (kg/h)", min_value=0.0, value=25.0, step=5.0)
 
-# Material weight including moisture
-material_weight_kg = feed_rate_kgph * (1 + moisture_content_pct / 100)
+material_weight = st.number_input("Material Weight (kg)", min_value=0.0, value=1000.0, step=10.0)
 
-# Retention time in seconds
-if total_input_kgph > 0:
-    retention_time_sec = (material_weight_kg / total_input_kgph) * 3600
+# Calculations
+wet_throughput = dry_meal_feed_rate + liquid_input_1 + liquid_input_2 + liquid_input_3
+
+# Avoid division by zero
+if wet_throughput > 0:
+    retention_time = (material_weight / wet_throughput) * 3600  # seconds
 else:
-    retention_time_sec = 0
+    retention_time = 0.0
 
-# Display results
-st.subheader("Simulation Results")
-st.metric("Filling Degree (%)", f"{filling_degree_pct:.1f}")
-st.metric("Material Weight (kg)", f"{material_weight_kg:.1f}")
-st.metric("Retention Time (s)", f"{retention_time_sec:.1f}")
-
-# Visualization
-st.subheader("Vessel Fill Level")
-fig, ax = plt.subplots(figsize=(4, 6))
-ax.barh(["Vessel"], [filling_degree_pct], color="skyblue")
-ax.set_xlim(0, 100)
-ax.set_xlabel("Filling Degree (%)")
-st.pyplot(fig)
+# Output Section
+st.header("Output Results")
+st.metric("Wet Throughput (kg/h)", f"{wet_throughput:.2f}")
+st.metric("Retention Time (s)", f"{retention_time:.2f}")
